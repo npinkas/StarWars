@@ -1,200 +1,140 @@
 module Library where
 import PdePreludat
 
+-- Parte 1
 
-data Relleno = DulceDeLeche | Mousse | Fruta deriving (Show, Eq)
-type Peso = Number
-type Dulzor = Number
 type Nombre = String
-type Dinero = Number
+type Durabilidad = Number
+type Escudo = Number
+type Ataque = Number
+type Poder = Nave -> Nave
 
-data Alfajor = UnAlfajor {
-    relleno :: [Relleno],
-    peso :: Peso,
-    dulzorInnato :: Dulzor,
-    nombre :: Nombre
-}deriving (Show, Eq)
+data Nave = UnaNave {
+    nombre :: Nombre,
+    durabilidad :: Durabilidad,
+    escudo :: Escudo,
+    ataque :: Ataque,
+    poder :: Poder
+} deriving (Show, Eq)
 
+tieFighter :: Nave
+tieFighter = UnaNave  "TIE Fighter" 200 100 50 movimientoTurbo
 
-jorgito = UnAlfajor [DulceDeLeche] 80 8 "Jorgito"
+xWing :: Nave
+xWing = UnaNave "X Wing" 300 150 100 reparacionEmergencia
 
-havanna = UnAlfajor [Mousse, Mousse] 60 12 "Havanna"
+darthVader :: Nave
+darthVader = UnaNave "Nave de Darth Vader" 500 300 200 movimientoSuperTurbo
 
-capitanDelEspacio = UnAlfajor [DulceDeLeche] 40 12 "Capitán del Espacio"
+millenniumFalcon :: Nave
+millenniumFalcon = UnaNave "Millennium Falcon" 1000 500 50 movimientoFalcon
 
---Parte 1
+movimientoTurbo :: Poder
+movimientoTurbo = modificarAtaque 25
 
-type Propiedad = Alfajor -> Number
+reparacionEmergencia :: Poder
+reparacionEmergencia = modificarAtaque (-30)  . modificarDurabilidad 50
 
---Propiedad 1
+movimientoSuperTurbo :: Poder
+movimientoSuperTurbo = modificarDurabilidad (-45) .repetirMovimiento 3 movimientoTurbo
 
-coeficienteDeDulzor :: Propiedad
-coeficienteDeDulzor alfajor = div (dulzorInnato alfajor) (peso alfajor)
+movimientoFalcon :: Poder
+movimientoFalcon = modificarEscudo 100 . reparacionEmergencia
 
---Propiedad 2
+movimientoInventado :: Poder
+movimientoInventado = modificarNombre "Pro " . repetirMovimiento 2 movimientoSuperTurbo 
 
-precioAlfajor :: Propiedad
-precioAlfajor alfajor = doblePesoAlfajor alfajor + sumatoriaRelleno alfajor
+repetirMovimiento :: Number -> Poder -> Poder
+repetirMovimiento 0  _ nave = nave 
+repetirMovimiento n movimiento nave = repetirMovimiento (n-1)movimiento (movimiento nave)
 
-sumatoriaRelleno ::  Alfajor -> Number
-sumatoriaRelleno alfajor = sum (map precioRellenos (relleno alfajor))
+modificarNombre :: Nombre -> Nave -> Nave
+modificarNombre nuevoNombre nave = nave {nombre = nuevoNombre ++ nombre nave}
 
-doblePesoAlfajor :: Alfajor -> Number
-doblePesoAlfajor = (2*) . peso
+modificarAtaque :: Number -> Poder
+modificarAtaque x nave = nave {ataque = ataque nave + x}
 
-precioRellenos :: Relleno -> Number
-precioRellenos relleno
-    | relleno == DulceDeLeche = 12
-    | relleno == Mousse = 15
-    | relleno == Fruta = 10
+modificarEscudo :: Number -> Poder
+modificarEscudo x nave = nave {escudo = escudo nave + x}
 
-
---Propiedad 3
-
-
-tieneCapasRelleno :: Alfajor -> Bool
-tieneCapasRelleno = not . null . relleno
-
-todasCapasIguales ::  Alfajor -> Bool
-todasCapasIguales alfajor = all (== head (relleno alfajor)) (relleno alfajor)
-
-coefDulzorMayorIgual :: Number -> Alfajor -> Bool
-coefDulzorMayorIgual x = (>= x) . dulzorInnato
-
-esPotable :: Alfajor-> Bool
-esPotable alfajor = tieneCapasRelleno alfajor && todasCapasIguales alfajor && coefDulzorMayorIgual 0.1 alfajor
-
---Parte 2
-
--- Ej a
-
-modificarPeso :: Peso -> Alfajor -> Alfajor
-modificarPeso nuevoPeso alfajor = alfajor {peso = peso alfajor + nuevoPeso}
-
-modificarDulzor :: Dulzor -> Alfajor -> Alfajor
-modificarDulzor nuevoDulzor alfajor = alfajor {dulzorInnato = dulzorInnato alfajor + nuevoDulzor}
-
-abaratarAlfajor :: Alfajor -> Alfajor
-abaratarAlfajor = modificarDulzor (-7) . modificarPeso (-10)
+modificarDurabilidad :: Number -> Poder
+modificarDurabilidad x nave = nave {durabilidad = durabilidad nave + x}
 
 
--- Parte b
+-- Parte 2
 
-renombrarAlfajor :: Nombre -> Alfajor -> Alfajor
-renombrarAlfajor nuevoNombre alfajor = alfajor{nombre = nuevoNombre}
+type Flota = [Nave]
 
--- Parte c
+durabilidadTotalFlota :: Flota -> Number
+durabilidadTotalFlota  = sum . durabilidadFlota 
 
-agregarCapa :: Relleno-> Alfajor -> Alfajor
-agregarCapa nuevoRelleno alfajor = alfajor {relleno = relleno alfajor ++ [nuevoRelleno]}
+durabilidadFlota :: Flota -> [Number]
+durabilidadFlota flota = map durabilidad flota
 
--- Parte d
-
-obtenerCapaDelMismoTipo :: Alfajor -> Relleno
-obtenerCapaDelMismoTipo alfajor = head (relleno alfajor)
-
-agregarNombrePremium :: Alfajor -> Alfajor
-agregarNombrePremium alfajor = alfajor {nombre = "Premium " ++ nombre alfajor}
-
-modificarAlfajorPremium :: Alfajor -> Alfajor
-modificarAlfajorPremium alfajor = (agregarNombrePremium . agregarCapa (obtenerCapaDelMismoTipo alfajor)) alfajor
-
-hacerPremium :: Alfajor -> Alfajor
-hacerPremium alfajor
-    |esPotable alfajor = modificarAlfajorPremium alfajor
-    |otherwise = alfajor
-
--- Parte e
-
-hacerPremiumDeCiertoGrado :: Number ->Alfajor -> Alfajor
-hacerPremiumDeCiertoGrado 1 alfajor = hacerPremium alfajor
-hacerPremiumDeCiertoGrado n  alfajor = hacerPremiumDeCiertoGrado (n-1) (hacerPremium alfajor) 
-
---Parte f
-
-jorgitito :: Alfajor
-jorgitito = abaratarAlfajor jorgito
-
-jorgelin :: Alfajor
-jorgelin = (renombrarAlfajor "Jorgelin" . agregarCapa DulceDeLeche) jorgito
-
-capitanCostaACosta :: Alfajor
-capitanCostaACosta =  (renombrarAlfajor "Capitan del Espacio Costa a Costa" . hacerPremiumDeCiertoGrado 4 . abaratarAlfajor) capitanDelEspacio
 
 -- Parte 3
 
---Ej a
+ataqueNave :: Nave -> Nave -> Nave
+ataqueNave naveAtacada naveAtacante = modificarDurabilidad  (negate (recibirAtaque naveAtacada naveAtacante)) naveAtacada
 
-data Cliente = UnCliente{
-    dinero :: Dinero,
-    alfajoresComprados :: [Alfajor],
-    criterio :: [Criterio]
-} deriving (Show, Eq)
+recibirAtaque :: Nave -> Nave -> Number
+recibirAtaque naveAtacada naveAtacante = dañoRecibido (activarPoderEspecial naveAtacada) (activarPoderEspecial naveAtacante)
 
-type Criterio = Alfajor -> Bool
+activarPoderEspecial :: Poder
+activarPoderEspecial nave = poder nave nave
 
-emi :: Cliente
-emi = UnCliente 120 [] [buscaMarca "Capitan del Espacio"]
-
-tomi :: Cliente
-tomi = UnCliente 1000 [] [esPretencioso, esDulcero]
-
-dante :: Cliente
-dante = UnCliente 200 [] [noTieneCiertoRelleno DulceDeLeche, esExtraño]
-
-juan :: Cliente
-juan = UnCliente 500 [] [esDulcero, buscaMarca "Jorgito", esPretencioso, noTieneCiertoRelleno Mousse]
-
-contieneEnElNombre :: String -> String -> Bool
-contieneEnElNombre [] _ = True
-contieneEnElNombre _ [] = False
-contieneEnElNombre (p:ps) (s:ss)
-  | p == s = contieneEnElNombre ps ss
-  | otherwise = contieneEnElNombre (p:ps) ss
-
-buscaMarca :: Nombre -> Criterio
-buscaMarca marca alfajor = contieneEnElNombre marca (nombre alfajor)
-
-esPretencioso :: Criterio
-esPretencioso alfajor = contieneEnElNombre "Premium" (nombre alfajor)
-
-esDulcero :: Criterio
-esDulcero = (>0.15) . dulzorInnato
-
-noTieneCiertoRelleno :: Relleno ->Criterio
-noTieneCiertoRelleno rellenoBuscado alfajor = not $ elem rellenoBuscado (relleno alfajor)
-
-esExtraño :: Criterio
-esExtraño alfajor = not (esPotable alfajor)
-
---Ej b
-
-type Alfajores = [Alfajor]
-
-leGustaAlfajor :: Cliente -> Alfajor -> Bool
-leGustaAlfajor cliente alfajor  = all ($ alfajor) (criterio cliente)
-
-alfajoresQueLeGustanCliente :: Alfajores -> Cliente -> Alfajores
-alfajoresQueLeGustanCliente alfajores cliente = filter (leGustaAlfajor cliente) alfajores
-
---Ej c
-
-comprarAlfajor :: Alfajor -> Cliente -> Cliente
-comprarAlfajor alfajor cliente
-    |puedeComprarAlfajor alfajor cliente = (modificarDinero alfajor . agregarAlfajorComprado alfajor) cliente
-    |otherwise = cliente
+dañoRecibido :: Nave -> Nave -> Number
+dañoRecibido naveAtacada naveAtacante = max 0 (ataque naveAtacante - escudo naveAtacada)
 
 
-agregarAlfajorComprado ::  Alfajor -> Cliente -> Cliente
-agregarAlfajorComprado alfajor cliente = cliente {alfajoresComprados = alfajoresComprados cliente ++ [alfajor]}
+-- Parte 4
 
-modificarDinero :: Alfajor -> Cliente -> Cliente
-modificarDinero alfajor cliente = cliente {dinero = dinero cliente - precioAlfajor alfajor}
+estaFueraDeCombate :: Nave -> Bool
+estaFueraDeCombate  = (==0) . durabilidad
 
-puedeComprarAlfajor ::  Alfajor -> Cliente -> Bool
-puedeComprarAlfajor alfajor cliente = dinero cliente >= precioAlfajor alfajor 
+-- Parte 5
 
---Ej d
+type Estrategia = Nave -> Bool
 
-comprarAlfajoresGustanCliente ::  Alfajores -> Cliente -> Cliente
-comprarAlfajoresGustanCliente alfajores cliente = foldl (flip comprarAlfajor) cliente (alfajoresQueLeGustanCliente alfajores cliente)
+misionSorpresa :: Nave -> Flota -> Estrategia -> Flota
+misionSorpresa _ [] _ = []
+misionSorpresa nave (x : xs) estrategia
+    | estrategia x = ataqueNave x nave : misionSorpresa nave xs estrategia
+    |otherwise = x : misionSorpresa nave xs estrategia
+
+navesDebiles :: Estrategia
+navesDebiles = (< 200) . escudo
+
+navesConPeligrosidad :: Number -> Estrategia
+navesConPeligrosidad valor = (> valor) . ataque 
+
+navesQuedarianFueraDeCombate :: Nave -> Estrategia
+navesQuedarianFueraDeCombate naveAtacada naveAtacante = estaFueraDeCombate (ataqueNave naveAtacada naveAtacante)
+
+estrategiaInventada :: Nave -> Estrategia 
+estrategiaInventada naveAtacante naveAtacada = ataque naveAtacante > escudo naveAtacada
+
+-- Parte 6
+
+llevarAdelanteMision :: Nave -> Flota -> Estrategia -> Estrategia -> Flota
+llevarAdelanteMision nave flota estrategia1 estrategia2 = misionSorpresa nave flota (obtenerEstrategiaMinimizaDurabilidad nave flota estrategia1 estrategia2) 
+
+
+obtenerEstrategiaMinimizaDurabilidad :: Nave -> Flota -> Estrategia -> Estrategia -> Estrategia
+obtenerEstrategiaMinimizaDurabilidad nave flota estrategia1 estrategia2
+    |buscarFlotaMinimizaDurabilidad nave flota estrategia1 estrategia2 = estrategia2
+    |otherwise = estrategia1
+    
+buscarFlotaMinimizaDurabilidad :: Nave -> Flota -> Estrategia -> Estrategia -> Bool
+buscarFlotaMinimizaDurabilidad nave flota estrategia1 estrategia2 = durabilidadTotalFlota (misionSorpresa nave flota estrategia1) > durabilidadTotalFlota (misionSorpresa nave flota estrategia2)
+
+-- Parte 7
+
+flotaInifinita :: Nave -> Flota
+flotaInifinita nave = nave : flotaInifinita nave
+
+{-
+ En este caso, no podemos aprovechar la caracteristica de que Haskell opera con lazy evaluation, ya que se debe recorrer toda la lista para obtener un resultado. Por ende, no es posible determinar su durabilidad total.
+
+Obtendremos la flota tras el ataque, pero probablemente culmine en un stack overflow ya que la lista es infinita, por lo que nunca terminará de recorrerla.
+-}
